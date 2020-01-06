@@ -46,7 +46,7 @@ func (sl *SkipList) Set(key int, val interface{}) {
 		sl.cacheList[i] = prev
 	}
 
-	if elm := sl.cacheList[0]; elm.key == key {
+	if elm := sl.cacheList[0].next[0]; elm != nil && elm.key == key {
 		sl.cacheList[0].val = val
 		return
 	}
@@ -58,27 +58,27 @@ func (sl *SkipList) Set(key int, val interface{}) {
 	}
 
 	for i := 0; i < len(insertData.next); i++ {
-		insertData.next[i] = sl.cacheList[0].next[i]
-		sl.cacheList[i] = insertData
+		insertData.next[i] = sl.cacheList[i].next[i]
+		sl.cacheList[i].next[i] = insertData
 	}
 }
 
 func (sl *SkipList) Get(key int) (interface{}, bool) {
 	var (
-		pre = sl.head
-		tem *element
+		prev = sl.head
+		next *element
 	)
 
 	for i := sl.maxLevel - 1; i >= 0; i-- {
-		tem = pre.next[i]
-		for tem != nil && tem.key < key {
-			pre = tem
-			tem = tem.next[i]
+		next = prev.next[i]
+		for next != nil && next.key < key {
+			prev = next
+			next = next.next[i]
 		}
 	}
 
-	if tem != nil && tem.key == key {
-		return tem.val, true
+	if next != nil && next.key == key {
+		return next.val, true
 	}
 
 	return nil, false
@@ -96,17 +96,17 @@ func (sl *SkipList) Del(key int) (interface{}, bool) {
 			prev = next
 			next = next.next[i]
 		}
-		sl.cacheList[i] = next
+		sl.cacheList[i] = prev
 	}
 
-	if sl.cacheList[0].key != key {
+	if elm := sl.cacheList[0].next[0]; elm == nil || elm.key != key {
 		return nil, false
 	}
 
 	val := sl.cacheList[0].val
 
-	for i := 0; i < len(sl.cacheList[0].next); i++ {
-		sl.cacheList[i] = sl.cacheList[i].next[i]
+	for i := 0; i < len(sl.cacheList[0].next[0].next); i++ {
+		sl.cacheList[i].next[i] = sl.cacheList[i].next[i].next[i]
 	}
 
 	return val, true
@@ -125,6 +125,5 @@ func (sl *SkipList) randomLevel() int {
 		if level >= sl.maxLevel {
 			return sl.maxLevel
 		}
-
 	}
 }
